@@ -3,9 +3,9 @@ using UnityEngine;
 
 public static class TerrainGenerator
 {
-    public static int[,,] Build(int xOffset, int yOffset)
+    public static BlockType[,,] Build(int xOffset, int yOffset)
     {
-        var result = new int[ChunkRenderer.ChunkWidth, ChunkRenderer.ChunkHeight, ChunkRenderer.ChunkHeight];
+        var result = new BlockType[ChunkRenderer.ChunkWidth, ChunkRenderer.ChunkHeight, ChunkRenderer.ChunkHeight];
 
         for (var x = 0; x < ChunkRenderer.ChunkWidth; ++x)
         {
@@ -15,7 +15,7 @@ public static class TerrainGenerator
                 
                 for (var y = 0; y < height; ++y)
                 {
-                    result[x, y, z] = 1;
+                    result[x, y, z] = BlockType.Grass;
                 }
             }
         }
