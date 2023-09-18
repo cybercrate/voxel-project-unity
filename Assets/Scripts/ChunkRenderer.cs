@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class ChunkRenderer : MonoBehaviour
@@ -9,15 +11,29 @@ public class ChunkRenderer : MonoBehaviour
     internal const float BlockScale = 1.0f;
 
     public ChunkData ChunkData;
-    public GameWorld ParentWorld;
+    
+    [FormerlySerializedAs("ParentWorld")]
+    public GameWorld parentWorld;
+
+    private Mesh _chunkMesh;
 
     private readonly List<Vector3> _vertices = new List<Vector3>();
     private readonly List<int> _triangles = new List<int>();
 
     private void Start()
     {
-        var chunkMesh = new Mesh();
+        _chunkMesh = new Mesh();
+        
+        RegenerateMesh();
 
+        GetComponent<MeshFilter>().sharedMesh = _chunkMesh;
+    }
+
+    private void RegenerateMesh()
+    {
+        _vertices.Clear();
+        _triangles.Clear();
+        
         for (var y = 0; y < ChunkHeight; ++y)
         {
             for (var x = 0; x < ChunkWidth; ++x)
@@ -29,15 +45,17 @@ public class ChunkRenderer : MonoBehaviour
             }
         }
 
-        chunkMesh.vertices = _vertices.ToArray();
-        chunkMesh.triangles = _triangles.ToArray();
+        _chunkMesh.triangles = Array.Empty<int>();
         
-        chunkMesh.Optimize();
-        chunkMesh.RecalculateBounds();
-        chunkMesh.RecalculateNormals();
+        _chunkMesh.vertices = _vertices.ToArray();
+        _chunkMesh.triangles = _triangles.ToArray();
 
-        GetComponent<MeshFilter>().mesh = chunkMesh;
-        GetComponent<MeshCollider>().sharedMesh = chunkMesh;
+        _chunkMesh.Optimize();
+        
+        _chunkMesh.RecalculateNormals();
+        _chunkMesh.RecalculateBounds();
+        
+        GetComponent<MeshCollider>().sharedMesh = _chunkMesh;
     }
 
     private void GenerateBlock(int x, int y, int z)
@@ -189,8 +207,18 @@ public class ChunkRenderer : MonoBehaviour
                 break;
         }
 
-        return ParentWorld.ChunkDatas.TryGetValue(adjacentChunkPosition, out var adjacentChunk)
+        return parentWorld.ChunkDatas.TryGetValue(adjacentChunkPosition, out var adjacentChunk)
             ? adjacentChunk.Blocks[blockPosition.x, blockPosition.y, blockPosition.z]
             : BlockType.Air;
     }
+
+    public void SpawnBlock(Vector3Int blockPosition, BlockType blockType)
+    {
+        ChunkData.Blocks[blockPosition.x, blockPosition.y, blockPosition.z] = blockType;
+        RegenerateMesh();
+    }
+
+    public void DestroyBlock(Vector3Int blockPosition) =>
+        SpawnBlock(blockPosition, BlockType.Air);
+
 }
